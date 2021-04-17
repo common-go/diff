@@ -1,4 +1,4 @@
-package service
+package diff
 
 import (
 	"encoding/json"

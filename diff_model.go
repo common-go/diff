@@ -1,4 +1,4 @@
-package service
+package diff
 
 type DiffModel struct {
 	Id     interface{} `mapstructure:"id" json:"id,omitempty" gorm:"column:id" bson:"_id,omitempty" dynamodbav:"id,omitempty" firestore:"id,omitempty"`
