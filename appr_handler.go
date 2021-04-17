@@ -43,7 +43,7 @@ func NewApprHandlerWithKeysAndLog(apprService ApprService, modelType reflect.Typ
 		offset = 1
 	}
 	if idNames == nil || len(idNames) == 0 {
-		idNames = getListFieldsTagJson(modelType)
+		idNames = getJsonPrimaryKeys(modelType)
 	}
 	indexes := getIndexes(modelType)
 	var resource, action1, action2 string

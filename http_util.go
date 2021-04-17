@@ -13,6 +13,25 @@ import (
 
 const internalServerError = "Internal Server Error"
 
+func getJsonPrimaryKeys(modelType reflect.Type) []string {
+	numField := modelType.NumField()
+	var idFields []string
+	for i := 0; i < numField; i++ {
+		field := modelType.Field(i)
+		ormTag := field.Tag.Get("gorm")
+		tags := strings.Split(ormTag, ";")
+		for _, tag := range tags {
+			if strings.Compare(strings.TrimSpace(tag), "primary_key") == 0 {
+				jsonTag := field.Tag.Get("json")
+				tags1 := strings.Split(jsonTag, ",")
+				if len(tags1) > 0 && tags1[0] != "-" {
+					idFields = append(idFields, tags1[0])
+				}
+			}
+		}
+	}
+	return idFields
+}
 func buildResourceName(s string) string {
 	s2 := strings.ToLower(s)
 	s3 := ""
@@ -104,12 +123,24 @@ func buildIds(r *http.Request, modelType reflect.Type, idNames []string) (interf
 	if len(idNames) > 1 {
 		return newModels(r.Body, modelType)
 	} else if len(idNames) == 1 {
-		modelTypeKey := getTypeFieldByJsonName(modelType, idNames[0])
+		modelTypeKey := getFieldType(modelType, idNames[0])
 		if modelTypeKey != nil {
 			return newModels(r.Body, modelTypeKey)
 		}
 	}
 	return nil, errors.New("invalid model type: no id of this model type")
+}
+func getFieldType(modelType reflect.Type, jsonName string) reflect.Type {
+	numField := modelType.NumField()
+	for i := 0; i < numField; i++ {
+		field := modelType.Field(i)
+		if tag, ok := field.Tag.Lookup("json"); ok {
+			if strings.Split(tag, ",")[0] == jsonName {
+				return field.Type
+			}
+		}
+	}
+	return nil
 }
 func newModels(body interface{}, modelType reflect.Type) (out interface{}, err error) {
 	req := reflect.New(reflect.SliceOf(modelType)).Interface()
@@ -124,37 +155,6 @@ func newModels(body interface{}, modelType reflect.Type) (out interface{}, err e
 		}
 	}
 	return nil, nil
-}
-func getTypeFieldByJsonName(modelType reflect.Type, jsonname string) reflect.Type {
-	numField := modelType.NumField()
-	for i := 0; i < numField; i++ {
-		field := modelType.Field(i)
-		if tag, ok := field.Tag.Lookup("json"); ok {
-			if strings.Split(tag, ",")[0] == jsonname {
-				return field.Type
-			}
-		}
-	}
-	return nil
-}
-func getListFieldsTagJson(modelType reflect.Type) []string {
-	numField := modelType.NumField()
-	var idFields []string
-	for i := 0; i < numField; i++ {
-		field := modelType.Field(i)
-		ormTag := field.Tag.Get("gorm")
-		tags := strings.Split(ormTag, ";")
-		for _, tag := range tags {
-			if strings.Compare(strings.TrimSpace(tag), "primary_key") == 0 {
-				jsonTag := field.Tag.Get("json")
-				tags1 := strings.Split(jsonTag, ",")
-				if len(tags1) > 0 && tags1[0] != "-" {
-					idFields = append(idFields, tags1[0])
-				}
-			}
-		}
-	}
-	return idFields
 }
 func getIndexes(modelType reflect.Type) map[string]int {
 	numField := modelType.NumField()

@@ -24,7 +24,7 @@ func NewDiffListHandler(diffListService DiffListService, modelType reflect.Type,
 }
 func NewDiffListHandlerWithKeys(diffListService DiffListService, modelType reflect.Type, logError func(context.Context, string), idNames []string, config *DiffModelConfig, writeLog func(context.Context, string, string, bool, string) error) *DiffListHandler {
 	if idNames == nil || len(idNames) == 0 {
-		idNames = getListFieldsTagJson(modelType)
+		idNames = getJsonPrimaryKeys(modelType)
 	}
 	modelTypeId := newModelTypeID(modelType, idNames)
 	var resource, action string

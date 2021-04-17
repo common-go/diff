@@ -36,7 +36,7 @@ func NewDiffHandlerWithKeys(diffService DiffService, modelType reflect.Type, log
 		offset = options[0]
 	}
 	if idNames == nil || len(idNames) == 0 {
-		idNames = getListFieldsTagJson(modelType)
+		idNames = getJsonPrimaryKeys(modelType)
 	}
 	indexes := getIndexes(modelType)
 	var resource, action string

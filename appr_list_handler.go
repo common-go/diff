@@ -23,7 +23,7 @@ func NewApprListHandler(apprListService ApprListService, modelType reflect.Type,
 
 func NewApprListHandlerWithKeys(apprListService ApprListService, modelType reflect.Type, logError func(context.Context, string), idNames []string, writeLog func(context.Context, string, string, bool, string) error, options ...string) *ApprListHandler {
 	if len(idNames) == 0 {
-		idNames = getListFieldsTagJson(modelType)
+		idNames = getJsonPrimaryKeys(modelType)
 	}
 	var resource, action1, action2 string
 	if len(options) > 0 && len(options[0]) > 0 {
