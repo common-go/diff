@@ -2,7 +2,7 @@ package diff
 
 type StatusDiffConfig struct {
 	Status *StatusConfig `mapstructure:"status" json:"status" gorm:"column:status" bson:"status" dynamodbav:"status" firestore:"status"`
-	Config *DiffConfig   `mapstructure:"config" json:"config" gorm:"column:config" bson:"config" dynamodbav:"config" firestore:"config"`
+	Config DiffConfig    `mapstructure:"config" json:"config" gorm:"column:config" bson:"config" dynamodbav:"config" firestore:"config"`
 }
 
 type StatusConfig struct {
