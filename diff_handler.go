@@ -15,22 +15,22 @@ type DiffModelConfig struct {
 	Action   string `mapstructure:"action" json:"action,omitempty" gorm:"column:action" bson:"action,omitempty" dynamodbav:"action,omitempty" firestore:"action,omitempty"`
 }
 type DiffHandler struct {
-	DiffService DiffService
-	Keys        []string
-	ModelType   reflect.Type
-	Error       func(context.Context, string)
-	Indexes     map[string]int
-	Offset      int
-	Log         func(ctx context.Context, resource string, action string, success bool, desc string) error
-	Resource    string
-	Action      string
-	Config      *DiffModelConfig
+	GetDiff   func(ctx context.Context, id interface{}) (*DiffModel, error)
+	Keys      []string
+	ModelType reflect.Type
+	Error     func(context.Context, string)
+	Indexes   map[string]int
+	Offset    int
+	Log       func(ctx context.Context, resource string, action string, success bool, desc string) error
+	Resource  string
+	Action    string
+	Config    *DiffModelConfig
 }
 
-func NewDiffHandler(diffService DiffService, modelType reflect.Type, logError func(context.Context, string), config *DiffModelConfig, writeLog func(context.Context, string, string, bool, string) error, options ...int) *DiffHandler {
-	return NewDiffHandlerWithKeys(diffService, nil, modelType, logError, config, writeLog, options...)
+func NewDiffHandler(diff func(context.Context, interface{}) (*DiffModel, error), modelType reflect.Type, logError func(context.Context, string), config *DiffModelConfig, writeLog func(context.Context, string, string, bool, string) error, options ...int) *DiffHandler {
+	return NewDiffHandlerWithKeys(diff, nil, modelType, logError, config, writeLog, options...)
 }
-func NewDiffHandlerWithKeys(diffService DiffService, keys []string, modelType reflect.Type, logError func(context.Context, string), config *DiffModelConfig, writeLog func(context.Context, string, string, bool, string) error, options ...int) *DiffHandler {
+func NewDiffHandlerWithKeys(diff func(context.Context, interface{}) (*DiffModel, error), keys []string, modelType reflect.Type, logError func(context.Context, string), config *DiffModelConfig, writeLog func(context.Context, string, string, bool, string) error, options ...int) *DiffHandler {
 	offset := 1
 	if len(options) > 0 {
 		offset = options[0]
@@ -50,7 +50,7 @@ func NewDiffHandlerWithKeys(diffService DiffService, keys []string, modelType re
 	if len(action) == 0 {
 		action = "diff"
 	}
-	return &DiffHandler{Log: writeLog, DiffService: diffService, ModelType: modelType, Keys: keys, Indexes: indexes, Resource: resource, Offset: offset, Config: config, Error: logError}
+	return &DiffHandler{Log: writeLog, GetDiff: diff, ModelType: modelType, Keys: keys, Indexes: indexes, Resource: resource, Offset: offset, Config: config, Error: logError}
 }
 
 func (c *DiffHandler) Diff(w http.ResponseWriter, r *http.Request) {
@@ -58,7 +58,7 @@ func (c *DiffHandler) Diff(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 	} else {
-		result, err := c.DiffService.Diff(r.Context(), id)
+		result, err := c.GetDiff(r.Context(), id)
 		if err != nil {
 			handleError(w, r, http.StatusInternalServerError, internalServerError, c.Error, c.Resource, c.Action, err, c.Log)
 		} else {
