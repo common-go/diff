@@ -8,11 +8,11 @@ import (
 )
 
 type DiffListHandler struct {
-	Error           func(context.Context, string)
 	DiffListService DiffListService
+	Keys            []string
 	ModelType       reflect.Type
 	modelTypeId     reflect.Type
-	IdNames         []string
+	Error           func(context.Context, string)
 	Log             func(ctx context.Context, resource string, action string, success bool, desc string) error
 	Resource        string
 	Action          string
@@ -20,13 +20,13 @@ type DiffListHandler struct {
 }
 
 func NewDiffListHandler(diffListService DiffListService, modelType reflect.Type, logError func(context.Context, string), config *DiffModelConfig, writeLog func(context.Context, string, string, bool, string) error) *DiffListHandler {
-	return NewDiffListHandlerWithKeys(diffListService, modelType, logError, nil, config, writeLog)
+	return NewDiffListHandlerWithKeys(diffListService, nil, modelType, logError, config, writeLog)
 }
-func NewDiffListHandlerWithKeys(diffListService DiffListService, modelType reflect.Type, logError func(context.Context, string), idNames []string, config *DiffModelConfig, writeLog func(context.Context, string, string, bool, string) error) *DiffListHandler {
-	if idNames == nil || len(idNames) == 0 {
-		idNames = getJsonPrimaryKeys(modelType)
+func NewDiffListHandlerWithKeys(diffListService DiffListService, keys []string, modelType reflect.Type, logError func(context.Context, string), config *DiffModelConfig, writeLog func(context.Context, string, string, bool, string) error) *DiffListHandler {
+	if keys == nil || len(keys) == 0 {
+		keys = getJsonPrimaryKeys(modelType)
 	}
-	modelTypeId := newModelTypeID(modelType, idNames)
+	modelTypeId := newModelTypeID(modelType, keys)
 	var resource, action string
 	if config != nil {
 		resource = config.Resource
@@ -38,11 +38,11 @@ func NewDiffListHandlerWithKeys(diffListService DiffListService, modelType refle
 	if len(action) == 0 {
 		action = "diff"
 	}
-	return &DiffListHandler{Log: writeLog, DiffListService: diffListService, ModelType: modelType, modelTypeId: modelTypeId, IdNames: idNames, Resource: resource, Action: action, Config: config, Error: logError}
+	return &DiffListHandler{Log: writeLog, DiffListService: diffListService, ModelType: modelType, modelTypeId: modelTypeId, Keys: keys, Resource: resource, Action: action, Config: config, Error: logError}
 }
 
 func (c *DiffListHandler) DiffList(w http.ResponseWriter, r *http.Request) {
-	ids, err := buildIds(r, c.modelTypeId, c.IdNames)
+	ids, err := buildIds(r, c.modelTypeId, c.Keys)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 	} else {

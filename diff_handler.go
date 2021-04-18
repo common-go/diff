@@ -15,10 +15,10 @@ type DiffModelConfig struct {
 	Action   string `mapstructure:"action" json:"action,omitempty" gorm:"column:action" bson:"action,omitempty" dynamodbav:"action,omitempty" firestore:"action,omitempty"`
 }
 type DiffHandler struct {
-	Error       func(context.Context, string)
 	DiffService DiffService
+	Keys        []string
 	ModelType   reflect.Type
-	IdNames     []string
+	Error       func(context.Context, string)
 	Indexes     map[string]int
 	Offset      int
 	Log         func(ctx context.Context, resource string, action string, success bool, desc string) error
@@ -28,15 +28,15 @@ type DiffHandler struct {
 }
 
 func NewDiffHandler(diffService DiffService, modelType reflect.Type, logError func(context.Context, string), config *DiffModelConfig, writeLog func(context.Context, string, string, bool, string) error, options ...int) *DiffHandler {
-	return NewDiffHandlerWithKeys(diffService, modelType, logError, nil, config, writeLog, options...)
+	return NewDiffHandlerWithKeys(diffService, nil, modelType, logError, config, writeLog, options...)
 }
-func NewDiffHandlerWithKeys(diffService DiffService, modelType reflect.Type, logError func(context.Context, string), idNames []string, config *DiffModelConfig, writeLog func(context.Context, string, string, bool, string) error, options ...int) *DiffHandler {
+func NewDiffHandlerWithKeys(diffService DiffService, keys []string, modelType reflect.Type, logError func(context.Context, string), config *DiffModelConfig, writeLog func(context.Context, string, string, bool, string) error, options ...int) *DiffHandler {
 	offset := 1
 	if len(options) > 0 {
 		offset = options[0]
 	}
-	if idNames == nil || len(idNames) == 0 {
-		idNames = getJsonPrimaryKeys(modelType)
+	if keys == nil || len(keys) == 0 {
+		keys = getJsonPrimaryKeys(modelType)
 	}
 	indexes := getIndexes(modelType)
 	var resource, action string
@@ -50,11 +50,11 @@ func NewDiffHandlerWithKeys(diffService DiffService, modelType reflect.Type, log
 	if len(action) == 0 {
 		action = "diff"
 	}
-	return &DiffHandler{Log: writeLog, DiffService: diffService, ModelType: modelType, IdNames: idNames, Indexes: indexes, Resource: resource, Offset: offset, Config: config, Error: logError}
+	return &DiffHandler{Log: writeLog, DiffService: diffService, ModelType: modelType, Keys: keys, Indexes: indexes, Resource: resource, Offset: offset, Config: config, Error: logError}
 }
 
 func (c *DiffHandler) Diff(w http.ResponseWriter, r *http.Request) {
-	id, err := buildId(r, c.ModelType, c.IdNames, c.Indexes, c.Offset)
+	id, err := buildId(r, c.ModelType, c.Keys, c.Indexes, c.Offset)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 	} else {

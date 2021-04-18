@@ -10,7 +10,7 @@ type ApprListHandler struct {
 	Error           func(context.Context, string)
 	ApprListService ApprListService
 	ModelType       reflect.Type
-	IdNames         []string
+	Keys            []string
 	Log             func(ctx context.Context, resource string, action string, success bool, desc string) error
 	Resource        string
 	Action1         string
@@ -18,12 +18,12 @@ type ApprListHandler struct {
 }
 
 func NewApprListHandler(apprListService ApprListService, modelType reflect.Type, logError func(context.Context, string), writeLog func(context.Context, string, string, bool, string) error, options ...string) *ApprListHandler {
-	return NewApprListHandlerWithKeys(apprListService, modelType, logError, nil, writeLog, options...)
+	return NewApprListHandlerWithKeys(apprListService, nil, modelType, logError, writeLog, options...)
 }
 
-func NewApprListHandlerWithKeys(apprListService ApprListService, modelType reflect.Type, logError func(context.Context, string), idNames []string, writeLog func(context.Context, string, string, bool, string) error, options ...string) *ApprListHandler {
-	if len(idNames) == 0 {
-		idNames = getJsonPrimaryKeys(modelType)
+func NewApprListHandlerWithKeys(apprListService ApprListService, keys []string, modelType reflect.Type, logError func(context.Context, string), writeLog func(context.Context, string, string, bool, string) error, options ...string) *ApprListHandler {
+	if keys == nil || len(keys) == 0 {
+		keys = getJsonPrimaryKeys(modelType)
 	}
 	var resource, action1, action2 string
 	if len(options) > 0 && len(options[0]) > 0 {
@@ -41,11 +41,11 @@ func NewApprListHandlerWithKeys(apprListService ApprListService, modelType refle
 	} else {
 		resource = buildResourceName(modelType.Name())
 	}
-	return &ApprListHandler{ApprListService: apprListService, ModelType: modelType, IdNames: idNames, Resource: resource, Error: logError, Log: writeLog, Action1: action1, Action2: action2}
+	return &ApprListHandler{ApprListService: apprListService, ModelType: modelType, Keys: keys, Resource: resource, Error: logError, Log: writeLog, Action1: action1, Action2: action2}
 }
 
 func (c *ApprListHandler) Approve(w http.ResponseWriter, r *http.Request) {
-	ids, err := buildIds(r, c.ModelType, c.IdNames)
+	ids, err := buildIds(r, c.ModelType, c.Keys)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 	} else {
@@ -59,7 +59,7 @@ func (c *ApprListHandler) Approve(w http.ResponseWriter, r *http.Request) {
 }
 
 func (c *ApprListHandler) Reject(w http.ResponseWriter, r *http.Request) {
-	ids, err := buildIds(r, c.ModelType, c.IdNames)
+	ids, err := buildIds(r, c.ModelType, c.Keys)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 	} else {

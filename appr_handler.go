@@ -12,7 +12,7 @@ type ApprHandler struct {
 	Error       func(context.Context, string)
 	ApprService ApprService
 	ModelType   reflect.Type
-	IdNames     []string
+	Keys        []string
 	Indexes     map[string]int
 	Offset      int
 	Log         func(ctx context.Context, resource string, action string, success bool, desc string) error
@@ -26,24 +26,24 @@ func NewApprHandler(apprService ApprService, modelType reflect.Type, logError fu
 	if len(option) > 0 && option[0] >= 0 {
 		offset = option[0]
 	}
-	return NewApprHandlerWithKeysAndLog(apprService, modelType, offset, logError, nil, nil)
+	return NewApprHandlerWithKeysAndLog(apprService, nil, modelType, offset, logError, nil)
 }
 func NewApprHandlerWithLogs(apprService ApprService, modelType reflect.Type, offset int, logError func(context.Context, string), writeLog func(context.Context, string, string, bool, string) error, options ...string) *ApprHandler {
-	return NewApprHandlerWithKeysAndLog(apprService, modelType, offset, logError, nil, writeLog, options...)
+	return NewApprHandlerWithKeysAndLog(apprService, nil, modelType, offset, logError, writeLog, options...)
 }
 func NewApprHandlerWithKeys(apprService ApprService, modelType reflect.Type, logError func(context.Context, string), idNames []string, option ...int) *ApprHandler {
 	offset := 1
 	if len(option) > 0 && option[0] >= 0 {
 		offset = option[0]
 	}
-	return NewApprHandlerWithKeysAndLog(apprService, modelType, offset, logError, idNames, nil)
+	return NewApprHandlerWithKeysAndLog(apprService, idNames, modelType, offset, logError, nil)
 }
-func NewApprHandlerWithKeysAndLog(apprService ApprService, modelType reflect.Type, offset int, logError func(context.Context, string), idNames []string, writeLog func(context.Context, string, string, bool, string) error, options ...string) *ApprHandler {
+func NewApprHandlerWithKeysAndLog(apprService ApprService, keys []string, modelType reflect.Type, offset int, logError func(context.Context, string), writeLog func(context.Context, string, string, bool, string) error, options ...string) *ApprHandler {
 	if offset < 0 {
 		offset = 1
 	}
-	if idNames == nil || len(idNames) == 0 {
-		idNames = getJsonPrimaryKeys(modelType)
+	if keys == nil || len(keys) == 0 {
+		keys = getJsonPrimaryKeys(modelType)
 	}
 	indexes := getIndexes(modelType)
 	var resource, action1, action2 string
@@ -62,7 +62,7 @@ func NewApprHandlerWithKeysAndLog(apprService ApprService, modelType reflect.Typ
 	} else {
 		resource = buildResourceName(modelType.Name())
 	}
-	return &ApprHandler{Log: writeLog, ApprService: apprService, ModelType: modelType, IdNames: idNames, Indexes: indexes, Offset: offset, Error: logError, Resource: resource, Action1: action1, Action2: action2}
+	return &ApprHandler{Log: writeLog, ApprService: apprService, ModelType: modelType, Keys: keys, Indexes: indexes, Offset: offset, Error: logError, Resource: resource, Action1: action1, Action2: action2}
 }
 
 func (c *ApprHandler) newModel(body interface{}) (out interface{}) {
@@ -81,7 +81,7 @@ func (c *ApprHandler) newModel(body interface{}) (out interface{}) {
 }
 
 func (c *ApprHandler) Approve(w http.ResponseWriter, r *http.Request) {
-	id, err := buildId(r, c.ModelType, c.IdNames, c.Indexes, c.Offset)
+	id, err := buildId(r, c.ModelType, c.Keys, c.Indexes, c.Offset)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 	} else {
@@ -95,7 +95,7 @@ func (c *ApprHandler) Approve(w http.ResponseWriter, r *http.Request) {
 }
 
 func (c *ApprHandler) Reject(w http.ResponseWriter, r *http.Request) {
-	id, err := buildId(r, c.ModelType, c.IdNames, c.Indexes, c.Offset)
+	id, err := buildId(r, c.ModelType, c.Keys, c.Indexes, c.Offset)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 	} else {
