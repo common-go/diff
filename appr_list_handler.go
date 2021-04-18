@@ -7,10 +7,10 @@ import (
 )
 
 type ApprListHandler struct {
-	Error           func(context.Context, string)
 	ApprListService ApprListService
-	ModelType       reflect.Type
 	Keys            []string
+	ModelType       reflect.Type
+	Error           func(context.Context, string)
 	Log             func(ctx context.Context, resource string, action string, success bool, desc string) error
 	Resource        string
 	Action1         string

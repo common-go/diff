@@ -9,10 +9,10 @@ import (
 )
 
 type ApprHandler struct {
-	Error       func(context.Context, string)
 	ApprService ApprService
-	ModelType   reflect.Type
 	Keys        []string
+	ModelType   reflect.Type
+	Error       func(context.Context, string)
 	Indexes     map[string]int
 	Offset      int
 	Log         func(ctx context.Context, resource string, action string, success bool, desc string) error
