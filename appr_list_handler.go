@@ -23,7 +23,7 @@ func NewApprListHandler(apprListService ApprListService, modelType reflect.Type,
 
 func NewApprListHandlerWithKeys(apprListService ApprListService, keys []string, modelType reflect.Type, logError func(context.Context, string), writeLog func(context.Context, string, string, bool, string) error, options ...string) *ApprListHandler {
 	if keys == nil || len(keys) == 0 {
-		keys = getJsonPrimaryKeys(modelType)
+		keys = GetJsonPrimaryKeys(modelType)
 	}
 	var resource, action1, action2 string
 	if len(options) > 0 && len(options[0]) > 0 {
@@ -39,19 +39,19 @@ func NewApprListHandlerWithKeys(apprListService ApprListService, keys []string, 
 	if len(options) > 2 && len(options[2]) > 0 {
 		resource = options[2]
 	} else {
-		resource = buildResourceName(modelType.Name())
+		resource = BuildResourceName(modelType.Name())
 	}
 	return &ApprListHandler{ApprListService: apprListService, ModelType: modelType, Keys: keys, Resource: resource, Error: logError, Log: writeLog, Action1: action1, Action2: action2}
 }
 
 func (c *ApprListHandler) Approve(w http.ResponseWriter, r *http.Request) {
-	ids, err := buildIds(r, c.ModelType, c.Keys)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+	ids, er1 := BuildIds(r, c.ModelType, c.Keys)
+	if er1 != nil {
+		http.Error(w, er1.Error(), http.StatusBadRequest)
 	} else {
-		result, err := c.ApprListService.Approve(r.Context(), ids)
-		if err != nil {
-			handleError(w, r, http.StatusInternalServerError, internalServerError, c.Error, c.Resource, c.Action1, err, c.Log)
+		result, er2 := c.ApprListService.Approve(r.Context(), ids)
+		if er2 != nil {
+			handleError(w, r, http.StatusInternalServerError, internalServerError, c.Error, c.Resource, c.Action1, er2, c.Log)
 		} else {
 			succeed(w, r, http.StatusOK, result, c.Log, c.Resource, c.Action1)
 		}
@@ -59,13 +59,13 @@ func (c *ApprListHandler) Approve(w http.ResponseWriter, r *http.Request) {
 }
 
 func (c *ApprListHandler) Reject(w http.ResponseWriter, r *http.Request) {
-	ids, err := buildIds(r, c.ModelType, c.Keys)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+	ids, er1 := BuildIds(r, c.ModelType, c.Keys)
+	if er1 != nil {
+		http.Error(w, er1.Error(), http.StatusBadRequest)
 	} else {
-		result, err := c.ApprListService.Reject(r.Context(), ids)
-		if err != nil {
-			handleError(w, r, http.StatusInternalServerError, internalServerError, c.Error, c.Resource, c.Action2, err, c.Log)
+		result, er2 := c.ApprListService.Reject(r.Context(), ids)
+		if er2 != nil {
+			handleError(w, r, http.StatusInternalServerError, internalServerError, c.Error, c.Resource, c.Action2, er2, c.Log)
 		} else {
 			succeed(w, r, http.StatusOK, result, c.Log, c.Resource, c.Action2)
 		}

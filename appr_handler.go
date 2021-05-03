@@ -2,8 +2,6 @@ package diff
 
 import (
 	"context"
-	"encoding/json"
-	"io"
 	"net/http"
 	"reflect"
 )
@@ -43,9 +41,9 @@ func NewApprHandlerWithKeysAndLog(apprService ApprService, keys []string, modelT
 		offset = 1
 	}
 	if keys == nil || len(keys) == 0 {
-		keys = getJsonPrimaryKeys(modelType)
+		keys = GetJsonPrimaryKeys(modelType)
 	}
-	indexes := getIndexes(modelType)
+	indexes := GetIndexes(modelType)
 	var resource, action1, action2 string
 	if len(options) > 0 && len(options[0]) > 0 {
 		action1 = options[0]
@@ -60,34 +58,19 @@ func NewApprHandlerWithKeysAndLog(apprService ApprService, keys []string, modelT
 	if len(options) > 2 && len(options[2]) > 0 {
 		resource = options[2]
 	} else {
-		resource = buildResourceName(modelType.Name())
+		resource = BuildResourceName(modelType.Name())
 	}
 	return &ApprHandler{Log: writeLog, ApprService: apprService, ModelType: modelType, Keys: keys, Indexes: indexes, Offset: offset, Error: logError, Resource: resource, Action1: action1, Action2: action2}
 }
 
-func (c *ApprHandler) newModel(body interface{}) (out interface{}) {
-	req := reflect.New(c.ModelType).Interface()
-	if body != nil {
-		switch s := body.(type) {
-		case io.Reader:
-			err := json.NewDecoder(s).Decode(&req)
-			if err != nil {
-				return err
-			}
-			return req
-		}
-	}
-	return req
-}
-
 func (c *ApprHandler) Approve(w http.ResponseWriter, r *http.Request) {
-	id, err := buildId(r, c.ModelType, c.Keys, c.Indexes, c.Offset)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+	id, er1 := BuildId(r, c.ModelType, c.Keys, c.Indexes, c.Offset)
+	if er1 != nil {
+		http.Error(w, er1.Error(), http.StatusBadRequest)
 	} else {
-		result, err := c.ApprService.Approve(r.Context(), id)
-		if err != nil {
-			handleError(w, r, http.StatusOK, internalServerError, c.Error, c.Resource, c.Action1, err, c.Log)
+		result, er2 := c.ApprService.Approve(r.Context(), id)
+		if er2 != nil {
+			handleError(w, r, http.StatusOK, internalServerError, c.Error, c.Resource, c.Action1, er2, c.Log)
 		} else {
 			succeed(w, r, http.StatusOK, result, c.Log, c.Resource, c.Action1)
 		}
@@ -95,13 +78,13 @@ func (c *ApprHandler) Approve(w http.ResponseWriter, r *http.Request) {
 }
 
 func (c *ApprHandler) Reject(w http.ResponseWriter, r *http.Request) {
-	id, err := buildId(r, c.ModelType, c.Keys, c.Indexes, c.Offset)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+	id, er1 := BuildId(r, c.ModelType, c.Keys, c.Indexes, c.Offset)
+	if er1 != nil {
+		http.Error(w, er1.Error(), http.StatusBadRequest)
 	} else {
-		result, err := c.ApprService.Reject(r.Context(), id)
-		if err != nil {
-			handleError(w, r, http.StatusOK, internalServerError, c.Error, c.Resource, c.Action2, err, c.Log)
+		result, er2 := c.ApprService.Reject(r.Context(), id)
+		if er2 != nil {
+			handleError(w, r, http.StatusOK, internalServerError, c.Error, c.Resource, c.Action2, er2, c.Log)
 		} else {
 			succeed(w, r, http.StatusOK, result, c.Log, c.Resource, c.Action2)
 		}

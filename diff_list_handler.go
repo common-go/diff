@@ -4,7 +4,6 @@ import (
 	"context"
 	"net/http"
 	"reflect"
-	"strings"
 )
 
 type DiffListHandler struct {
@@ -24,16 +23,16 @@ func NewDiffListHandler(diff func(context.Context, interface{}) (*[]DiffModel, e
 }
 func NewDiffListHandlerWithKeys(diff func(context.Context, interface{}) (*[]DiffModel, error), keys []string, modelType reflect.Type, logError func(context.Context, string), config *DiffModelConfig, writeLog func(context.Context, string, string, bool, string) error) *DiffListHandler {
 	if keys == nil || len(keys) == 0 {
-		keys = getJsonPrimaryKeys(modelType)
+		keys = GetJsonPrimaryKeys(modelType)
 	}
-	modelTypeId := newModelTypeID(modelType, keys)
+	modelTypeId := NewModelTypeID(modelType, keys)
 	var resource, action string
 	if config != nil {
 		resource = config.Resource
 		action = config.Action
 	}
 	if len(resource) == 0 {
-		resource = buildResourceName(modelType.Name())
+		resource = BuildResourceName(modelType.Name())
 	}
 	if len(action) == 0 {
 		action = "diff"
@@ -42,13 +41,13 @@ func NewDiffListHandlerWithKeys(diff func(context.Context, interface{}) (*[]Diff
 }
 
 func (c *DiffListHandler) DiffList(w http.ResponseWriter, r *http.Request) {
-	ids, err := buildIds(r, c.modelTypeId, c.Keys)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+	ids, er1 := BuildIds(r, c.modelTypeId, c.Keys)
+	if er1 != nil {
+		http.Error(w, er1.Error(), http.StatusBadRequest)
 	} else {
-		list, err := c.GetDiff(r.Context(), ids)
-		if err != nil {
-			handleError(w, r, http.StatusInternalServerError, internalServerError, c.Error, c.Resource, c.Action, err, c.Log)
+		list, er2 := c.GetDiff(r.Context(), ids)
+		if er2 != nil {
+			handleError(w, r, http.StatusInternalServerError, internalServerError, c.Error, c.Resource, c.Action, er2, c.Log)
 		} else {
 			if c.Config == nil || list == nil || len(*list) == 0 {
 				succeed(w, r, http.StatusOK, list, c.Log, c.Resource, c.Action)
@@ -74,31 +73,4 @@ func (c *DiffListHandler) DiffList(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
-}
-
-func newModelTypeID(modelType reflect.Type, idJsonNames []string) reflect.Type {
-	model := reflect.New(modelType).Interface()
-	value := reflect.Indirect(reflect.ValueOf(model))
-	sf := make([]reflect.StructField, 0)
-	for i := 0; i < modelType.NumField(); i++ {
-		sf = append(sf, modelType.Field(i))
-		field := modelType.Field(i)
-		json := field.Tag.Get("json")
-		s := strings.Split(json, ",")[0]
-		if find(idJsonNames, s) == false {
-			sf[i].Tag = `json:"-"`
-		}
-	}
-	newType := reflect.StructOf(sf)
-	newValue := value.Convert(newType)
-	return reflect.TypeOf(newValue.Interface())
-}
-
-func find(slice []string, val string) bool {
-	for _, item := range slice {
-		if item == val {
-			return true
-		}
-	}
-	return false
 }

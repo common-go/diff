@@ -36,16 +36,16 @@ func NewDiffHandlerWithKeys(diff func(context.Context, interface{}) (*DiffModel,
 		offset = options[0]
 	}
 	if keys == nil || len(keys) == 0 {
-		keys = getJsonPrimaryKeys(modelType)
+		keys = GetJsonPrimaryKeys(modelType)
 	}
-	indexes := getIndexes(modelType)
+	indexes := GetIndexes(modelType)
 	var resource, action string
 	if config != nil {
 		resource = config.Resource
 		action = config.Action
 	}
 	if len(resource) == 0 {
-		resource = buildResourceName(modelType.Name())
+		resource = BuildResourceName(modelType.Name())
 	}
 	if len(action) == 0 {
 		action = "diff"
@@ -54,13 +54,13 @@ func NewDiffHandlerWithKeys(diff func(context.Context, interface{}) (*DiffModel,
 }
 
 func (c *DiffHandler) Diff(w http.ResponseWriter, r *http.Request) {
-	id, err := buildId(r, c.ModelType, c.Keys, c.Indexes, c.Offset)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+	id, er1 := BuildId(r, c.ModelType, c.Keys, c.Indexes, c.Offset)
+	if er1 != nil {
+		http.Error(w, er1.Error(), http.StatusBadRequest)
 	} else {
-		result, err := c.GetDiff(r.Context(), id)
-		if err != nil {
-			handleError(w, r, http.StatusInternalServerError, internalServerError, c.Error, c.Resource, c.Action, err, c.Log)
+		result, er2 := c.GetDiff(r.Context(), id)
+		if er2 != nil {
+			handleError(w, r, http.StatusInternalServerError, internalServerError, c.Error, c.Resource, c.Action, er2, c.Log)
 		} else {
 			if c.Config == nil {
 				succeed(w, r, http.StatusOK, result, c.Log, c.Resource, c.Action)

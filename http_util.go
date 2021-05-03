@@ -13,7 +13,7 @@ import (
 
 const internalServerError = "Internal Server Error"
 
-func getJsonPrimaryKeys(modelType reflect.Type) []string {
+func GetJsonPrimaryKeys(modelType reflect.Type) []string {
 	numField := modelType.NumField()
 	var idFields []string
 	for i := 0; i < numField; i++ {
@@ -32,7 +32,7 @@ func getJsonPrimaryKeys(modelType reflect.Type) []string {
 	}
 	return idFields
 }
-func buildResourceName(s string) string {
+func BuildResourceName(s string) string {
 	s2 := strings.ToLower(s)
 	s3 := ""
 	for i := range s {
@@ -47,7 +47,7 @@ func buildResourceName(s string) string {
 	}
 	return s3
 }
-func buildId(r *http.Request, modelType reflect.Type, idNames []string, indexs map[string]int, sizeIgnoreLastUri int) (interface{}, error) {
+func BuildId(r *http.Request, modelType reflect.Type, idNames []string, indexs map[string]int, sizeIgnoreLastUri int) (interface{}, error) {
 	modelValue := reflect.New(modelType)
 	if len(idNames) > 1 {
 		mapKey := make(map[string]interface{})
@@ -119,7 +119,7 @@ func buildId(r *http.Request, modelType reflect.Type, idNames []string, indexs m
 		return nil, errors.New("invalid model type: no id of this model type")
 	}
 }
-func buildIds(r *http.Request, modelType reflect.Type, idNames []string) (interface{}, error) {
+func BuildIds(r *http.Request, modelType reflect.Type, idNames []string) (interface{}, error) {
 	if len(idNames) > 1 {
 		return newModels(r.Body, modelType)
 	} else if len(idNames) == 1 {
@@ -156,7 +156,7 @@ func newModels(body interface{}, modelType reflect.Type) (out interface{}, err e
 	}
 	return nil, nil
 }
-func getIndexes(modelType reflect.Type) map[string]int {
+func GetIndexes(modelType reflect.Type) map[string]int {
 	numField := modelType.NumField()
 	mapJsonNameIndex := make(map[string]int, 0)
 	for i := 0; i < numField; i++ {
@@ -200,4 +200,30 @@ func getParamIds(r *http.Request, idNames []string, sizeIgnoreLastUri int) (inte
 		return params, mapParams, nil
 	}
 	return nil, nil, errors.New("bad request")
+}
+
+func NewModelTypeID(modelType reflect.Type, idJsonNames []string) reflect.Type {
+	model := reflect.New(modelType).Interface()
+	value := reflect.Indirect(reflect.ValueOf(model))
+	sf := make([]reflect.StructField, 0)
+	for i := 0; i < modelType.NumField(); i++ {
+		sf = append(sf, modelType.Field(i))
+		field := modelType.Field(i)
+		json := field.Tag.Get("json")
+		s := strings.Split(json, ",")[0]
+		if find(idJsonNames, s) == false {
+			sf[i].Tag = `json:"-"`
+		}
+	}
+	newType := reflect.StructOf(sf)
+	newValue := value.Convert(newType)
+	return reflect.TypeOf(newValue.Interface())
+}
+func find(slice []string, val string) bool {
+	for _, item := range slice {
+		if item == val {
+			return true
+		}
+	}
+	return false
 }
