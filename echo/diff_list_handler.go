@@ -42,40 +42,38 @@ func NewDiffListHandlerWithKeys(diff func(context.Context, interface{}) (*[]d.Di
 	return &DiffListHandler{Log: writeLog, GetDiff: diff, ModelType: modelType, modelTypeId: modelTypeId, Keys: keys, Resource: resource, Action: action, Config: config, Error: logError}
 }
 
-func (c *DiffListHandler) DiffList() echo.HandlerFunc {
-	return func(ctx echo.Context) error {
-		r := ctx.Request()
-		ids, er1 := d.BuildIds(r, c.modelTypeId, c.Keys)
-		if er1 != nil {
-			ctx.String(http.StatusBadRequest, er1.Error())
-			return er1
+func (c *DiffListHandler) DiffList(ctx echo.Context) error {
+	r := ctx.Request()
+	ids, er1 := d.BuildIds(r, c.modelTypeId, c.Keys)
+	if er1 != nil {
+		ctx.String(http.StatusBadRequest, er1.Error())
+		return er1
+	} else {
+		list, er2 := c.GetDiff(r.Context(), ids)
+		if er2 != nil {
+			return handleError(ctx, http.StatusInternalServerError, internalServerError, c.Error, c.Resource, c.Action, er2, c.Log)
 		} else {
-			list, er2 := c.GetDiff(r.Context(), ids)
-			if er2 != nil {
-				return handleError(ctx, http.StatusInternalServerError, internalServerError, c.Error, c.Resource, c.Action, er2, c.Log)
+			if c.Config == nil || list == nil || len(*list) == 0 {
+				return succeed(ctx, http.StatusOK, list, c.Log, c.Resource, c.Action)
 			} else {
-				if c.Config == nil || list == nil || len(*list) == 0 {
-					return succeed(ctx, http.StatusOK, list, c.Log, c.Resource, c.Action)
-				} else {
-					l := make([]map[string]interface{}, 0)
-					for _, result := range *list {
-						m := make(map[string]interface{})
-						if result.Id != nil {
-							m[c.Config.Id] = result.Id
-						}
-						if result.Origin != nil {
-							m[c.Config.Origin] = result.Origin
-						}
-						if result.Value != nil {
-							m[c.Config.Value] = result.Value
-						}
-						if len(result.By) > 0 {
-							m[c.Config.By] = result.By
-						}
-						l = append(l, m)
+				l := make([]map[string]interface{}, 0)
+				for _, result := range *list {
+					m := make(map[string]interface{})
+					if result.Id != nil {
+						m[c.Config.Id] = result.Id
 					}
-					return succeed(ctx, http.StatusOK, l, c.Log, c.Resource, c.Action)
+					if result.Origin != nil {
+						m[c.Config.Origin] = result.Origin
+					}
+					if result.Value != nil {
+						m[c.Config.Value] = result.Value
+					}
+					if len(result.By) > 0 {
+						m[c.Config.By] = result.By
+					}
+					l = append(l, m)
 				}
+				return succeed(ctx, http.StatusOK, l, c.Log, c.Resource, c.Action)
 			}
 		}
 	}

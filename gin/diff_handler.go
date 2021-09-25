@@ -47,35 +47,33 @@ func NewDiffHandlerWithKeys(diff func(context.Context, interface{}) (*d.DiffMode
 	return &DiffHandler{Log: writeLog, GetDiff: diff, ModelType: modelType, Keys: keys, Indexes: indexes, Resource: resource, Offset: offset, Config: config, Error: logError}
 }
 
-func (c *DiffHandler) Diff() gin.HandlerFunc {
-	return func(ctx *gin.Context) {
-		r := ctx.Request
-		id, er1 := d.BuildId(r, c.ModelType, c.Keys, c.Indexes, c.Offset)
-		if er1 != nil {
-			ctx.String(http.StatusBadRequest, er1.Error())
+func (c *DiffHandler) Diff(ctx *gin.Context) {
+	r := ctx.Request
+	id, er1 := d.BuildId(r, c.ModelType, c.Keys, c.Indexes, c.Offset)
+	if er1 != nil {
+		ctx.String(http.StatusBadRequest, er1.Error())
+	} else {
+		result, er2 := c.GetDiff(r.Context(), id)
+		if er2 != nil {
+			handleError(ctx, http.StatusInternalServerError, internalServerError, c.Error, c.Resource, c.Action, er2, c.Log)
 		} else {
-			result, er2 := c.GetDiff(r.Context(), id)
-			if er2 != nil {
-				handleError(ctx, http.StatusInternalServerError, internalServerError, c.Error, c.Resource, c.Action, er2, c.Log)
+			if c.Config == nil {
+				succeed(ctx, http.StatusOK, result, c.Log, c.Resource, c.Action)
 			} else {
-				if c.Config == nil {
-					succeed(ctx, http.StatusOK, result, c.Log, c.Resource, c.Action)
-				} else {
-					m := make(map[string]interface{})
-					if result.Id != nil {
-						m[c.Config.Id] = result.Id
-					}
-					if result.Origin != nil {
-						m[c.Config.Origin] = result.Origin
-					}
-					if result.Value != nil {
-						m[c.Config.Value] = result.Value
-					}
-					if len(result.By) > 0 {
-						m[c.Config.By] = result.By
-					}
-					succeed(ctx, http.StatusOK, m, c.Log, c.Resource, c.Action)
+				m := make(map[string]interface{})
+				if result.Id != nil {
+					m[c.Config.Id] = result.Id
 				}
+				if result.Origin != nil {
+					m[c.Config.Origin] = result.Origin
+				}
+				if result.Value != nil {
+					m[c.Config.Value] = result.Value
+				}
+				if len(result.By) > 0 {
+					m[c.Config.By] = result.By
+				}
+				succeed(ctx, http.StatusOK, m, c.Log, c.Resource, c.Action)
 			}
 		}
 	}

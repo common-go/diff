@@ -46,36 +46,32 @@ func NewApprListHandlerWithKeys(apprListService d.ApprListService, keys []string
 	return &ApprListHandler{ApprListService: apprListService, ModelType: modelType, Keys: keys, Resource: resource, Error: logError, Log: writeLog, Action1: action1, Action2: action2}
 }
 
-func (c *ApprListHandler) Approve() gin.HandlerFunc {
-	return func(ctx *gin.Context) {
-		r := ctx.Request
-		ids, er1 := d.BuildIds(r, c.ModelType, c.Keys)
-		if er1 != nil {
-			ctx.String(http.StatusBadRequest, er1.Error())
+func (c *ApprListHandler) Approve(ctx *gin.Context) {
+	r := ctx.Request
+	ids, er1 := d.BuildIds(r, c.ModelType, c.Keys)
+	if er1 != nil {
+		ctx.String(http.StatusBadRequest, er1.Error())
+	} else {
+		result, er2 := c.ApprListService.Approve(r.Context(), ids)
+		if er2 != nil {
+			handleError(ctx, http.StatusInternalServerError, internalServerError, c.Error, c.Resource, c.Action1, er2, c.Log)
 		} else {
-			result, er2 := c.ApprListService.Approve(r.Context(), ids)
-			if er2 != nil {
-				handleError(ctx, http.StatusInternalServerError, internalServerError, c.Error, c.Resource, c.Action1, er2, c.Log)
-			} else {
-				succeed(ctx, http.StatusOK, result, c.Log, c.Resource, c.Action1)
-			}
+			succeed(ctx, http.StatusOK, result, c.Log, c.Resource, c.Action1)
 		}
 	}
 }
 
-func (c *ApprListHandler) Reject() gin.HandlerFunc {
-	return func(ctx *gin.Context) {
-		r := ctx.Request
-		ids, er1 := d.BuildIds(r, c.ModelType, c.Keys)
-		if er1 != nil {
-			ctx.String(http.StatusBadRequest, er1.Error())
+func (c *ApprListHandler) Reject(ctx *gin.Context) {
+	r := ctx.Request
+	ids, er1 := d.BuildIds(r, c.ModelType, c.Keys)
+	if er1 != nil {
+		ctx.String(http.StatusBadRequest, er1.Error())
+	} else {
+		result, er2 := c.ApprListService.Reject(r.Context(), ids)
+		if er2 != nil {
+			handleError(ctx, http.StatusInternalServerError, internalServerError, c.Error, c.Resource, c.Action2, er2, c.Log)
 		} else {
-			result, er2 := c.ApprListService.Reject(r.Context(), ids)
-			if er2 != nil {
-				handleError(ctx, http.StatusInternalServerError, internalServerError, c.Error, c.Resource, c.Action2, er2, c.Log)
-			} else {
-				succeed(ctx, http.StatusOK, result, c.Log, c.Resource, c.Action2)
-			}
+			succeed(ctx, http.StatusOK, result, c.Log, c.Resource, c.Action2)
 		}
 	}
 }

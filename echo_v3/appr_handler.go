@@ -67,38 +67,34 @@ func NewApprHandlerWithKeysAndLog(apprService d.ApprService, keys []string, mode
 	return &ApprHandler{Log: writeLog, ApprService: apprService, ModelType: modelType, Keys: keys, Indexes: indexes, Offset: offset, Error: logError, Resource: resource, Action1: action1, Action2: action2}
 }
 
-func (c *ApprHandler) Approve() echo.HandlerFunc {
-	return func(ctx echo.Context) error {
-		r := ctx.Request()
-		id, er1 := d.BuildId(r, c.ModelType, c.Keys, c.Indexes, c.Offset)
-		if er1 != nil {
-			ctx.String(http.StatusBadRequest, er1.Error())
-			return er1
+func (c *ApprHandler) Approve(ctx echo.Context) error {
+	r := ctx.Request()
+	id, er1 := d.BuildId(r, c.ModelType, c.Keys, c.Indexes, c.Offset)
+	if er1 != nil {
+		ctx.String(http.StatusBadRequest, er1.Error())
+		return er1
+	} else {
+		result, er2 := c.ApprService.Approve(r.Context(), id)
+		if er2 != nil {
+			return handleError(ctx, http.StatusOK, internalServerError, c.Error, c.Resource, c.Action1, er2, c.Log)
 		} else {
-			result, er2 := c.ApprService.Approve(r.Context(), id)
-			if er2 != nil {
-				return handleError(ctx, http.StatusOK, internalServerError, c.Error, c.Resource, c.Action1, er2, c.Log)
-			} else {
-				return succeed(ctx, http.StatusOK, result, c.Log, c.Resource, c.Action1)
-			}
+			return succeed(ctx, http.StatusOK, result, c.Log, c.Resource, c.Action1)
 		}
 	}
 }
 
-func (c *ApprHandler) Reject() echo.HandlerFunc {
-	return func(ctx echo.Context) error {
-		r := ctx.Request()
-		id, er1 := d.BuildId(r, c.ModelType, c.Keys, c.Indexes, c.Offset)
-		if er1 != nil {
-			ctx.String(http.StatusBadRequest, er1.Error())
-			return er1
+func (c *ApprHandler) Reject(ctx echo.Context) error {
+	r := ctx.Request()
+	id, er1 := d.BuildId(r, c.ModelType, c.Keys, c.Indexes, c.Offset)
+	if er1 != nil {
+		ctx.String(http.StatusBadRequest, er1.Error())
+		return er1
+	} else {
+		result, er2 := c.ApprService.Reject(r.Context(), id)
+		if er2 != nil {
+			return handleError(ctx, http.StatusOK, internalServerError, c.Error, c.Resource, c.Action2, er2, c.Log)
 		} else {
-			result, er2 := c.ApprService.Reject(r.Context(), id)
-			if er2 != nil {
-				return handleError(ctx, http.StatusOK, internalServerError, c.Error, c.Resource, c.Action2, er2, c.Log)
-			} else {
-				return succeed(ctx, http.StatusOK, result, c.Log, c.Resource, c.Action2)
-			}
+			return succeed(ctx, http.StatusOK, result, c.Log, c.Resource, c.Action2)
 		}
 	}
 }
