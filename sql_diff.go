@@ -30,13 +30,13 @@ type KeyBuilder interface {
 	BuildKeyFromMap(keyMap map[string]interface{}, idNames []string) string
 }
 type DiffConfig struct {
-	HistoryId  string `mapstructure:"history_id" json:"historyId,omitempty" gorm:"column:historyid" bson:"_historyId,omitempty" dynamodbav:"historyId,omitempty" firestore:"historyId,omitempty"`
-	Id         string `mapstructure:"id" json:"id,omitempty" gorm:"column:id" bson:"_id,omitempty" dynamodbav:"id,omitempty" firestore:"id,omitempty"`
-	Origin     string `mapstructure:"origin" json:"origin,omitempty" gorm:"column:origin" bson:"origin,omitempty" dynamodbav:"origin,omitempty" firestore:"origin,omitempty"`
-	Value      string `mapstructure:"value" json:"value,omitempty" gorm:"column:value" bson:"value,omitempty" dynamodbav:"value,omitempty" firestore:"value,omitempty"`
-	ChangedBy  string `mapstructure:"changedBy" json:"changedBy,omitempty" gorm:"column:changedBy" bson:"changedBy,omitempty" dynamodbav:"changedBy,omitempty" firestore:"changedBy,omitempty"`
-	ApprovedBy string `mapstructure:"approvedBy" json:"approvedBy,omitempty" gorm:"column:approvedBy" bson:"approvedBy,omitempty" dynamodbav:"approvedBy,omitempty" firestore:"approvedBy,omitempty"`
-	Timestamp  string `mapstructure:"timestamp" json:"timestamp,omitempty" gorm:"column:timestamp" bson:"timestamp,omitempty" dynamodbav:"timestamp,omitempty" firestore:"timestamp,omitempty"`
+	HistoryId  string `yaml:"history_id" mapstructure:"history_id" json:"historyId,omitempty" gorm:"column:historyid" bson:"_historyId,omitempty" dynamodbav:"historyId,omitempty" firestore:"historyId,omitempty"`
+	Id         string `yaml:"id" mapstructure:"id" json:"id,omitempty" gorm:"column:id" bson:"_id,omitempty" dynamodbav:"id,omitempty" firestore:"id,omitempty"`
+	Origin     string `yaml:"origin" mapstructure:"origin" json:"origin,omitempty" gorm:"column:origin" bson:"origin,omitempty" dynamodbav:"origin,omitempty" firestore:"origin,omitempty"`
+	Value      string `yaml:"value" mapstructure:"value" json:"value,omitempty" gorm:"column:value" bson:"value,omitempty" dynamodbav:"value,omitempty" firestore:"value,omitempty"`
+	ChangedBy  string `yaml:"changed_by" mapstructure:"changed_by" json:"changedBy,omitempty" gorm:"column:changedBy" bson:"changedBy,omitempty" dynamodbav:"changedBy,omitempty" firestore:"changedBy,omitempty"`
+	ApprovedBy string `yaml:"approved_by" mapstructure:"approved_by" json:"approvedBy,omitempty" gorm:"column:approvedBy" bson:"approvedBy,omitempty" dynamodbav:"approvedBy,omitempty" firestore:"approvedBy,omitempty"`
+	Timestamp  string `yaml:"timestamp" mapstructure:"timestamp" json:"timestamp,omitempty" gorm:"column:timestamp" bson:"timestamp,omitempty" dynamodbav:"timestamp,omitempty" firestore:"timestamp,omitempty"`
 }
 type SqlDiffReader struct {
 	DB           *sql.DB
